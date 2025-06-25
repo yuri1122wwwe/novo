@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+ <html lang="pt-BR">
+
+<head> 
+ <meta charset="UTF-8">
+   
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+     	 
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pagamento PIX</title>
+	<style>
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		background-color: #f3f4f6;
+		min-height: 100vh;
+	}
+
+	/* Estilos da tela de loading */
+	.loading-screen {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: #fff;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		z-index: 9999;
+		opacity: 1;
+		transition: opacity 0.5s ease;
+	}
+
+	.loading-screen.hidden {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.loading-logo {
+		max-width: 200px;
+		max-height: 100px;
+		margin-bottom: 30px;
+		object-fit: contain;
+	}
+
+	.spinner {
+		width: 50px;
+		height: 50px;
+		border: 5px solid #f3f3f3;
+		border-top: 5px solid #16a34a;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 20px;
+	}
+
+	.loading-text {
+		color: #16a34a;
+		font-size: 24px;
+		font-weight: 600;
+		letter-spacing: 1px;
+	}
+
+	@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+
+	/* Seus estilos existentes */
+	.top-bar {
+		background-color: white;
+		border-bottom: 1px solid #e5e7eb;
+		padding: 12px 0;
+	}
+
+	.top-bar-content {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 16px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.logo {
+		height: 32px;
+	}
+
+	.secure-badge {
+		display: flex;
+		align-items: center;
+		color: rgb(16, 185, 129);
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.secure-badge svg {
+		margin-right: 8px;
+	}
+
+	.container {
+		max-width: 28rem;
+		margin: 0 auto;
+		padding: 16px;
+	}
+
+	.card {
+		background-color: white;
+		border-radius: 8px;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		padding: 24px;
+		margin-top: 16px;
+	}
+
+	.text-center {
+		text-align: center;
+	}
+
+	.title {
+		font-size: 24px;
+		font-weight: bold;
+		margin-bottom: 16px;
+	}
+
+	.timer {
+		color: #6b7280;
+		margin-bottom: 8px;
+	}
+
+	.timer span {
+		color: #ef4444;
+		font-weight: bold;
+	}
+
+	.info-box {
+		background-color: #eff6ff;
+		border: 1px solid #dbeafe;
+		border-radius: 8px;
+		padding: 16px;
+		margin-bottom: 24px;
+	}
+
+	.info-box p {
+		color: #1e40af;
+		font-size: 14px;
+	}
+
+	.pix-value {
+		margin-bottom: 24px;
+	}
+
+	.pix-value-label {
+		color: #6b7280;
+		margin-bottom: 8px;
+	}
+
+	.pix-amount {
+		color: #10c44c;
+		font-size: 24px;
+		font-weight: bold;
+	}
+
+	.pix-input {
+		width: 100%;
+		padding: 12px;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		background-color: #f9fafb;
+		color: #6b7280;
+		margin-bottom: 8px;
+	}
+
+	.copy-button {
+		width: 100%;
+		padding: 12px;
+		border: none;
+		border-radius: 8px;
+		background-color: #4bb266;
+		color: white;
+		font-weight: 500;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s;
+	}
+
+	.copy-button:hover {
+		background-color: #10c44c;
+	}
+
+	.copy-button svg {
+		margin-right: 8px;
+	}
+
+	.instructions {
+		margin-top: 32px;
+	}
+
+	.instruction-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.instruction-item svg {
+		flex-shrink: 0;
+		color: #6b7280;
+	}
+
+	.instruction-text {
+		color: #6b7280;
+	}
+
+	.status {
+		margin-top: 32px;
+		color: #6b7280;
+		font-style: italic;
+	}
+
+	.animate-dots::after {
+		content: '...';
+		animation: dots 1.5s steps(4, end) infinite;
+	}
+
+	@keyframes dots {
+
+		0%,
+		20% {
+			content: '';
+		}
+
+		40% {
+			content: '.';
+		}
+
+		60% {
+			content: '..';
+		}
+
+		80% {
+			content: '...';
+		}
+	}
+
+	.divider {
+		border-top: 1px solid #e5e7eb;
+		margin: 32px 0;
+	}
+	</style>
+ 	<style type="text/css" id="operaUserStyle"></style>
+</head>
+
+<body cz-shortcut-listen="true">
+	<!-- Tela de loading -->
+	<div class="loading-screen hidden" id="loadingScreen" style="display: none;">
+		<img src="pagamento/index_files/vakinha.png" alt="Logo" class="loading-logo">
+		<div class="spinner"></div>
+		<div class="loading-text">Gerando sua contribuição</div>
+	</div>
+	<div class="top-bar">
+		<div class="top-bar-content">
+			<img src="pagamento/index_files/eZ5DPjd.png" alt="Logo" class="logo">
+			<div class="secure-badge">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M9 12l2 2 4-4"></path>
+					<path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+				</svg>
+				<span>Ambiente seguro</span>
+			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<div class="text-center">
+				<h1 class="title">Efetue o pagamento para
+confirmar a contribuição</h1>
+			</div>
+		
+		
+			<div>
+				<input type="text" class="pix-input" value="ajudaparaartem@qzueos.com" readonly="" id="pixCopiaCola">
+				<button id="copyButton" class="copy-button" style="background-color:#4bb266;">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+					</svg>
+					<span>COPIAR CÓDIGO</span>
+				</button>
+			</div>
+			<!-- Elemento para exibir a contagem regressiva -->
+			
+			<div class="instructions">
+				<h2 class="title">Pagar seu pedido com PIX</h2>
+				<div class="instruction-item">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+						<path d="M12 18h.01"></path>
+					</svg>
+					<p class="instruction-text">Copie o código acima.</p>
+				</div>
+				<div class="instruction-item">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						<path d="M9 12l2 2 4-4"></path>
+					</svg>
+					<p class="instruction-text">Selecione a opção PIX E-mail no aplicativo do seu banco..</p>
+				</div>
+				<div class="instruction-item">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="9 11 12 14 22 4"></polyline>
+						<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+					</svg>
+					<p class="instruction-text">Alguns segundos após o pagamento, a confirmação chega pra gente.</p>
+				</div>
+				<div class="instruction-item">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="9 11 12 14 22 4"></polyline>
+						<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+					</svg>
+					<p class="instruction-text">Recebedor: VASTOMIX LTDA - Nossos parceiros nessa jornada.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+	// Controle da tela de loading
+	document.addEventListener('DOMContentLoaded', function() {
+		const loadingScreen = document.getElementById('loadingScreen');
+		setTimeout(function() {
+			loadingScreen.classList.add('hidden');
+			setTimeout(function() {
+				loadingScreen.style.display = 'none';
+			}, 500);
+		}, 2000);
+	});
+	// Função de contagem regressiva (30 minutos = 1800 segundos)
+	function startTimer(duration) {
+		let timer = duration;
+		const countdownElement = document.getElementById('countdown');
+		const interval = setInterval(() => {
+			const minutes = Math.floor(timer / 60);
+			const seconds = timer % 60;
+			countdownElement.textContent = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+			if(--timer < 0) {
+				clearInterval(interval);
+				countdownElement.textContent = '00:00';
+			}
+		}, 1000);
+	}
+	// Função para copiar o código PIX
+	document.getElementById('copyButton').addEventListener('click', async () => {
+		const pixCode = document.getElementById('pixCopiaCola').value;
+		try {
+			await navigator.clipboard.writeText(pixCode);
+			const button = document.getElementById('copyButton');
+			const originalContent = button.innerHTML;
+			button.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Copiado!</span>
+                `;
+			button.style.backgroundColor = '#16a34a';
+			setTimeout(() => {
+				button.innerHTML = originalContent;
+				button.style.backgroundColor = '#10b981';
+			}, 2000);
+		} catch (err) {
+			console.error('Falha ao copiar:', err);
+		}
+	});
+	// Inicia o timer quando a página é carregada
+	startTimer(1800);
+	</script>
+	<!-- Inclua o jQuery antes do seu script -->
+	<script src="pagamento/index_files/jquery-3.6.0.min.js.download"></script>
+ 	<!-- Se estiver usando o toastr, inclua-o também -->
+	<link rel="stylesheet" href="pagamento/index_files/toastr.min.css">
+	<script src="pagamento/index_files/toastr.min.js.download"></script>
+
+
+	<script>
+    let statusCheckInterval;  // Defining the global variable
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const idTransaction = urlParams.get('id_transacao');
+        const valor = urlParams.get('value'); // Captures the value from the URL
+        const cpf = '07068093868';
+        const nome_comprador = 'Anonimo';
+        const utm_source = urlParams.get('utm_source') || 'organic';
+        const utm_campaign = urlParams.get('utm_campaign') || '';
+        const utm_medium = urlParams.get('utm_medium') || '';
+        const utm_content = urlParams.get('utm_content') || '';
+        const utm_term = urlParams.get('utm_term') || '';
+
+        if (idTransaction) {
+            verificarStatusPagamento(idTransaction, valor, cpf, nome_comprador, utm_source, utm_campaign, utm_medium, utm_content, utm_term);
+        } else {
+            console.log("Transaction ID not found.");
+        }
+    });
+
+    // Function to check the transaction status via get-status.php
+    async function fetchTransactionStatus(transactionId, valor, cpf, nome_comprador, utm_source, utm_campaign, utm_medium, utm_content, utm_term) {
+        try {
+            const response = await fetch(`../get-status-transaction.php?transaction_id=${transactionId}`);
+
+            if (!response.ok) {
+                throw new Error(`Request error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.message || 'Unknown error');
+            }
+
+            console.log(`Transaction status: ${data.status}`);
+            console.log(`CPF: ${cpf}`);
+            console.log(`Name: ${nome_comprador}`);
+            console.log(`Value: ${valor}`);
+
+            if (data.status !== "pendente") {
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                }
+                console.log("Final status:", data.status);
+            }
+
+            if (data.status === "pago") {
+                console.log("Payment approved! Redirecting...");
+                window.location.href = `../obrigado?transaction_id=${transactionId}&nome_comprador=${nome_comprador}&cpf=${cpf}&updateUtm=true&value=${valor}&utm_source=${encodeURIComponent(utm_source)}&utm_campaign=${encodeURIComponent(utm_campaign)}&utm_medium=${encodeURIComponent(utm_medium)}&utm_content=${encodeURIComponent(utm_content)}&utm_term=${encodeURIComponent(utm_term)}`;
+            }
+
+        } catch (error) {
+            console.error("Error fetching transaction:", error);
+        }
+    }
+
+    function verificarStatusPagamento(transactionId, valor, cpf, nome_comprador, utm_source, utm_campaign, utm_medium, utm_content, utm_term) {
+        fetchTransactionStatus(transactionId, valor, cpf, nome_comprador, utm_source, utm_campaign, utm_medium, utm_content, utm_term); // First call
+        statusCheckInterval = setInterval(() => {
+            fetchTransactionStatus(transactionId, valor, cpf, nome_comprador, utm_source, utm_campaign, utm_medium, utm_content, utm_term);
+        }, 7000); // Checks every 5 seconds
+
+        window.addEventListener('beforeunload', () => {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+        });
+    }
+</script>
+
+
+ 
+	  <script
+  src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+  data-utmify-prevent-xcod-sck
+  data-utmify-prevent-subids
+  async
+  defer
+></script>
+
+ 
+	
+</body>
+
+</html>
